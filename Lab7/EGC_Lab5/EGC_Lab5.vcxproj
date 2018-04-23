@@ -92,7 +92,13 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="EGC_Lab5.cpp" />
+    <ClCompile Include="mat3.cpp" />
+    <ClCompile Include="mat4.cpp" />
     <ClCompile Include="stdafx.cpp" />
+    <ClCompile Include="transform.cpp" />
+    <ClCompile Include="vec2.cpp" />
+    <ClCompile Include="vec3.cpp" />
+    <ClCompile Include="vec4.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
