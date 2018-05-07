@@ -50,13 +50,11 @@ namespace egc
 	vec4 mat4::operator *(const vec4& srcVector) const
 	{
 		vec4 v;
-		for (int i = 0; i < 4; i++)
-		{
-			v.x += this->at(0, i) * srcVector.x;
-			v.y += this->at(1, i) * srcVector.y;
-			v.z += this->at(2, i) * srcVector.z;
-			v.w += this->at(3, i) * srcVector.w;
-		}
+		v.x = this->at(0, 0) * srcVector.x + this->at(0, 1) * srcVector.y + this->at(0, 2) * srcVector.z + this->at(0, 3) * srcVector.w;
+		v.y = this->at(1, 0) * srcVector.x + this->at(1, 1) * srcVector.y + this->at(1, 2) * srcVector.z + this->at(1, 3) * srcVector.w;
+		v.z = this->at(2, 0) * srcVector.x + this->at(2, 1) * srcVector.y + this->at(2, 2) * srcVector.z + this->at(2, 3) * srcVector.w;
+		v.w = this->at(3, 0) * srcVector.x + this->at(3, 1) * srcVector.y + this->at(3, 2) * srcVector.z + this->at(3, 3) * srcVector.w;
+
 
 		return v;
 	}
