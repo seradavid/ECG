@@ -138,14 +138,15 @@ namespace egc {
 
 	bool simpleRejection(std::vector<int> cod1, std::vector<int> cod2)
 	{
-		bool result = true;
-
 		for (int i = 0; i < 4; i++)
 		{
-			result = result && (cod1.at(i) == cod2.at(i) && cod1.at(i) != 0);
+			if (cod1.at(i) && cod2.at(i))
+			{
+				return true;
+			}
 		}
 
-		return result;
+		return false;
 	}
 
 	bool simpleAcceptance(std::vector<int> cod1, std::vector<int> cod2)
@@ -205,7 +206,7 @@ namespace egc {
 				{
 					p1.x = x;
 					p1.y = y;
-					cod1 = computeCSCode(clipWindow, p1);;
+					cod1 = computeCSCode(clipWindow, p1);
 				}
 				else
 				{
