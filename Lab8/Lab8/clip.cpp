@@ -19,6 +19,13 @@ namespace egc {
 		if (p1 == p2)
 		{
 			// point
+			for (int i = 0; i < n; ++i) 
+			{
+				if (dotProduct(normals[i], p1 - clipWindow[i]) > 0)
+				{
+					return -1;
+				}
+			}
 			return 0;
 		}
 		else

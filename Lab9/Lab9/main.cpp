@@ -75,8 +75,14 @@ bool clipPointInHomogeneousCoordinate(egc::vec4 vertex)
 
 bool clipTriangleInHomegeneousCoordinates(egc::vec4 vertex1, egc::vec4 vertex2, egc::vec4 vertex3)
 {
-	
-	return true;
+	if (clipPointInHomogeneousCoordinate(vertex1) ||
+		clipPointInHomogeneousCoordinate(vertex2) ||
+		clipPointInHomogeneousCoordinate(vertex3))
+	{
+		return true;
+	}
+
+	return false;
 }
 
 egc::vec3 findNormalVectorToTriangle(egc::vec4 vertex1, egc::vec4 vertex2, egc::vec4 vertex3)
@@ -84,7 +90,7 @@ egc::vec3 findNormalVectorToTriangle(egc::vec4 vertex1, egc::vec4 vertex2, egc::
 	egc::vec3 n;
 
 	n = egc::crossProduct(vertex2 - vertex1, vertex3 - vertex1);
-	n = n.normalize();
+	n.normalize();
 
 	return n;
 }
@@ -102,13 +108,27 @@ egc::vec4 findCenterPointOfTriangle(egc::vec4 vertex1, egc::vec4 vertex2, egc::v
 
 bool isTriangleVisible(egc::vec4 vertex1, egc::vec4 vertex2, egc::vec4 vertex3, egc::vec3 normalVector)
 {
-	
+	int angle = egc::dotProduct(egc::vec3(findCenterPointOfTriangle(vertex1, vertex2, vertex3)) - myCamera.cameraPosition, normalVector);
+	if (angle < 0) // angle < 90
+	{
+		return false;
+	}
 	return true;
 }
 
 void displayNormalVectors(egc::vec3 normalVector, egc::vec4 triangleCenter)
 {
-	SDL_RenderDrawLine(renderer, triangleCenter.x, triangleCenter.y, triangleCenter.x + normalVector.x * 2, triangleCenter.y + normalVector.y * 2);
+	int dy = 2 * viewportTopLeftCorner.y + viewportDimensions.y;
+
+	egc::vec4 tempVertex1 = egc::vec4(triangleCenter.x, triangleCenter.y, triangleCenter.z, 1);
+	egc::vec4 tempVertex2 = egc::vec4(triangleCenter.x + normalVector.x * 0.1, triangleCenter.y + normalVector.y * 0.1, triangleCenter.z + normalVector.z * 0.1, 1);
+
+	tempVertex1 = transform * tempVertex1;
+	tempVertex2 = transform * tempVertex2;
+
+	egc::perspectiveDivide(tempVertex1);
+	egc::perspectiveDivide(tempVertex2);
+	SDL_RenderDrawLine(renderer, tempVertex1.x, dy - tempVertex1.y, tempVertex2.x, dy - tempVertex2.y);
 }
 
 void renderMesh(SDL_Renderer *renderer, std::vector<tinyobj::shape_t> shapes)
@@ -126,17 +146,28 @@ void renderMesh(SDL_Renderer *renderer, std::vector<tinyobj::shape_t> shapes)
 			egc::vec4 tempVertex2 = egc::vec4(shapes[i].mesh.positions[3 * vertexId2 + 0], shapes[i].mesh.positions[3 * vertexId2 + 1], shapes[i].mesh.positions[3 * vertexId2 + 2], 1);
 			egc::vec4 tempVertex3 = egc::vec4(shapes[i].mesh.positions[3 * vertexId3 + 0], shapes[i].mesh.positions[3 * vertexId3 + 1], shapes[i].mesh.positions[3 * vertexId3 + 2], 1);
 
-			tempVertex1 = transform * modelMatrix * tempVertex1;
-			tempVertex2 = transform * modelMatrix *tempVertex2;
-			tempVertex3 = transform * modelMatrix *tempVertex3;
+			tempVertex1 = modelMatrix * tempVertex1;
+			tempVertex2 = modelMatrix * tempVertex2;
+			tempVertex3 = modelMatrix * tempVertex3;
 
-			egc::perspectiveDivide(tempVertex1);
-			egc::perspectiveDivide(tempVertex2);
-			egc::perspectiveDivide(tempVertex3);
+			if (displayNormals)displayNormalVectors(findNormalVectorToTriangle(tempVertex1, tempVertex2, tempVertex3), findCenterPointOfTriangle(tempVertex1, tempVertex2, tempVertex3));
 
-			SDL_SetRenderDrawColor(renderer, 96, 96, 96, 0);
-			drawWireframeTriangle(renderer, tempVertex1, tempVertex2, tempVertex3);
+			if (isTriangleVisible(tempVertex1, tempVertex2, tempVertex3, findNormalVectorToTriangle(tempVertex1, tempVertex2, tempVertex3)))
+			{
+				tempVertex1 = transform * tempVertex1;
+				tempVertex2 = transform * tempVertex2;
+				tempVertex3 = transform * tempVertex3;
 
+				//if (!clipTriangleInHomegeneousCoordinates(tempVertex1, tempVertex2, tempVertex3))
+				{
+					egc::perspectiveDivide(tempVertex1);
+					egc::perspectiveDivide(tempVertex2);
+					egc::perspectiveDivide(tempVertex3);
+
+					SDL_SetRenderDrawColor(renderer, 96, 96, 96, 0);
+					drawWireframeTriangle(renderer, tempVertex1, tempVertex2, tempVertex3);
+				}
+			}
 		}
 	}
 }
@@ -180,7 +211,7 @@ std::vector<tinyobj::shape_t> readOBJ()
 				shapes[i].mesh.positions[3 * v + 1],
 				shapes[i].mesh.positions[3 * v + 2]);
 		}
-}
+	}
 #endif
 	return shapes;
 }
@@ -331,8 +362,6 @@ int main(int argc, char * argv[]) {
 	cameraMatrix = egc::defineCameraMatrix(myCamera);
 	perspectiveMatrix = egc::definePerspectiveProjectionMatrix(45.0f, 1.0, -0.1f, -10.0f);
 
-	transform = (viewTransformMatrix * perspectiveMatrix) * cameraMatrix;
-
 	std::vector<tinyobj::shape_t> shapes = readOBJ();
 
 	SDL_Rect viewportRectangle = { static_cast<int>(viewportTopLeftCorner.x), static_cast<int>(viewportTopLeftCorner.y), static_cast<int>(viewportDimensions.x), static_cast<int>(viewportDimensions.y) };
@@ -360,6 +389,8 @@ int main(int argc, char * argv[]) {
 			modelMatrix = egc::rotateY(rotationAngle) * egc::scale(15.0f, 15.0f, 15.0f);
 			myCamera.cameraPosition.z = cameraZ;
 			cameraMatrix = egc::defineCameraMatrix(myCamera);
+
+			transform = (viewTransformMatrix * perspectiveMatrix) * cameraMatrix;
 
 			SDL_SetRenderDrawColor(renderer, 255, 0, 0, 0);
 			renderMesh(renderer, shapes);
